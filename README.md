@@ -53,7 +53,7 @@ npm run db:import-legacy
 It runs only once and maps the old "offer" status to Available.
 
 ### 5. Logo
-Put Constance's portrait as `public/logo.png` (round portrait with the gold ring, transparent background). Until then a placeholder circle is shown.
+The logo (`public/logo.png`) and the favicons are the same portrait as constancechan.my. To change them, replace those files in `public/`.
 
 ---
 

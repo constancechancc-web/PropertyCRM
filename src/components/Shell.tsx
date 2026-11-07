@@ -26,7 +26,7 @@ export function Logo({ size }: { size: number }) {
         <span style={{ fontSize: size * 0.36 }}>CC</span>
       </span>
     )
-  return <img src="/logo.png" alt="" width={size} height={size} onError={() => setBroken(true)} style={{ width: size, height: size }} className="shrink-0 rounded-full object-contain" />
+  return <img src="/logo.png" alt="" width={size} height={size} onError={() => setBroken(true)} style={{ width: size, height: size }} className="shrink-0 object-contain" />
 }
 
 export function GlassFan() {
