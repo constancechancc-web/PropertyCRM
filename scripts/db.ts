@@ -10,6 +10,11 @@ import { hashPassword } from '../server/auth'
 const [cmd, ...args] = process.argv.slice(2)
 
 async function main() {
+  // Runs as part of `npm run build`: only migrates on Vercel, never on your own computer.
+  if (cmd === 'build-migrate') {
+    if (!process.env.VERCEL) process.exit(0)
+    return migrateOnVercel()
+  }
   if (cmd === 'migrate' && process.env.VERCEL && !databaseUrl()) {
     console.log('No database connected yet: skipping migration. Connect Postgres in Vercel → Storage, then redeploy.')
     process.exit(0)
@@ -57,6 +62,17 @@ async function main() {
     default:
       throw new Error('Unknown command')
   }
+  process.exit(0)
+}
+
+async function migrateOnVercel() {
+  if (!databaseUrl()) {
+    console.log('No database connected yet: skipping migration. Connect Postgres in Vercel → Storage, then redeploy.')
+    process.exit(0)
+  }
+  const db = await getDb()
+  await db.exec(readSql('schema.sql'))
+  console.log('Database schema is up to date.')
   process.exit(0)
 }
 

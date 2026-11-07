@@ -81,7 +81,7 @@ npm test
 ## Folders
 - `src/`: the app (pages, components, parsers in `src/lib/parsers.ts`)
 - `server/`: API, login, database access
-- `api/`: the Vercel function that serves `/api/*`
+- `api/`: the Vercel function that serves `/api/*` (via the rewrite in vercel.json)
 - `db/`: `schema.sql` (tables, RLS, roles), `seed_examples.sql`, `import_legacy.sql`
 - `scripts/db.ts`: migrate, users, seeds
 - `tests/`: automated checks for the acceptance tests

@@ -1,9 +1,13 @@
-// Vercel serverless function: every /api/* request lands here.
+// Vercel serverless function. vercel.json rewrites every /api/<path> here as /api?__path=<path>.
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { handle } from '../server/api.js'
 
 export default async function handler(req: IncomingMessage & { body?: unknown }, res: ServerResponse) {
-  const out = await handle({ method: req.method ?? 'GET', url: req.url ?? '/', headers: req.headers, body: req.body })
+  const u = new URL(req.url ?? '/', 'http://local')
+  const path = u.searchParams.get('__path')
+  u.searchParams.delete('__path')
+  const url = path != null ? `/api/${path}${u.search}` : u.pathname + u.search
+  const out = await handle({ method: req.method ?? 'GET', url, headers: req.headers, body: req.body })
   res.statusCode = out.status
   res.setHeader('Content-Type', 'application/json; charset=utf-8')
   res.setHeader('Cache-Control', 'no-store')
