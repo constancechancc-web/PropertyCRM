@@ -1,0 +1,129 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Urbanist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --color-page: #f8f6f4;
+  --color-card: #ffffff;
+  --color-ink: #25223a;
+  --color-text-2: #6f7680;
+  --color-text-3: #9aa1aa;
+  --color-line: #ece8f0;
+  --color-brand: #6f63c6;
+  --color-brand-ink: #3b3270;
+  --color-brand-soft: #efeafb;
+
+  --color-peach: #ffe3d3;
+  --color-peach-ink: #8a4320;
+  --color-mint: #daf2e5;
+  --color-mint-ink: #2c6a4c;
+  --color-lilac: #ece5fb;
+  --color-lilac-ink: #3b3270;
+  --color-butter: #fff2c7;
+  --color-butter-ink: #7a5a06;
+  --color-sky: #dceef9;
+  --color-sky-ink: #24577a;
+  --color-rose: #fbe1ea;
+  --color-rose-ink: #8a2f52;
+
+  --color-good: #8fd4ae;
+  --color-bad: #f5a08c;
+  --color-warn: #f6d36b;
+  --color-bar: #e9e6ee;
+}
+
+:root {
+  --hero: linear-gradient(115deg, #ffd8c4 0%, #f9cadb 32%, #d9cdf6 64%, #c3e6f2 100%);
+  color-scheme: light;
+}
+
+html,
+body {
+  background: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+.hero {
+  background: var(--hero);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+/* Glass fan in the header */
+.glass-pill {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 46px;
+  height: 240px;
+  margin-left: -23px;
+  border-radius: 9999px;
+  transform-origin: 50% 100%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85) 0%, rgba(236, 229, 251, 0.55) 55%, rgba(217, 205, 246, 0.25) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.75), inset 0 -12px 24px rgba(217, 205, 246, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.anim-sheet {
+  animation: sheet-up 0.22s ease-out;
+}
+.anim-fade {
+  animation: fade-in 0.18s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

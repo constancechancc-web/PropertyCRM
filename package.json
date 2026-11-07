@@ -1,0 +1,43 @@
+{
+  "name": "constance-crm",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "db:migrate": "node --env-file-if-exists=.env --import tsx scripts/db.ts migrate",
+    "db:seed-examples": "node --env-file-if-exists=.env --import tsx scripts/db.ts seed-examples",
+    "db:import-legacy": "node --env-file-if-exists=.env --import tsx scripts/db.ts import-legacy",
+    "user:add": "node --env-file-if-exists=.env --import tsx scripts/db.ts user-add",
+    "user:remove": "node --env-file-if-exists=.env --import tsx scripts/db.ts user-remove",
+    "vercel-build": "node --env-file-if-exists=.env --import tsx scripts/db.ts migrate && vite build"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.9",
+    "lucide-react": "^1.70.0",
+    "pg": "^8.23.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.5",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.15",
+    "@tailwindcss/vite": "^4.3.5",
+    "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.2.1",
+    "tailwindcss": "^4.3.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0"
+  }
+}
