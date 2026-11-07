@@ -36,7 +36,13 @@ begin
   if not exists (select 1 from pg_roles where rolname = 'crm_app') then
     create role crm_app nologin;
   end if;
-  if not pg_has_role(current_user, 'crm_app', 'member') then
+  -- The API's connection must be able to SET ROLE crm_app. On PostgreSQL 16+ (Neon),
+  -- creating a role does not give that right automatically, so grant it explicitly.
+  if current_setting('server_version_num')::int >= 160000 then
+    if not pg_has_role(current_user, 'crm_app', 'SET') then
+      execute format('grant crm_app to %I with set true, inherit false', current_user);
+    end if;
+  elsif not pg_has_role(current_user, 'crm_app', 'member') then
     execute format('grant crm_app to %I', current_user);
   end if;
 end $$;
