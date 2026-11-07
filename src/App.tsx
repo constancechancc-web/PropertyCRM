@@ -10,6 +10,7 @@ import Leads from './pages/Leads'
 import Listings from './pages/Listings'
 import Contacts from './pages/Contacts'
 import Rent from './pages/Rent'
+import Sales from './pages/Sales'
 
 function Splash({ children }: { children?: React.ReactNode }) {
   return (
@@ -40,6 +41,7 @@ function Routed() {
       <Route path="/listings" element={<Listings />} />
       <Route path="/contacts" element={<Contacts />} />
       <Route path="/rent" element={<Rent />} />
+      <Route path="/sales" element={<Sales />} />
       <Route path="*" element={<Navigate to="/today" replace />} />
     </Routes>
   )

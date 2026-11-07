@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ClipboardPaste, Contact as ContactIcon, ExternalLink, MessageCircle, Pencil, Plus, Building2, Trash2 } from 'lucide-react'
+import { BadgeDollarSign, ClipboardPaste, Contact as ContactIcon, ExternalLink, MessageCircle, Pencil, Plus, Building2, Trash2 } from 'lucide-react'
 import { PageShell, headerBtn } from '../components/Shell'
 import { Sheet } from '../components/Sheet'
 import { useToast } from '../components/Toast'
@@ -290,6 +290,15 @@ function LeadDetail({ lead, today }: { lead: Lead; today: string }) {
             Contact Card
           </Button>
         )}
+        {admin &&
+          (() => {
+            const existing = db.deals.find((x) => x.lead_id === lead.id)
+            return (
+              <Button icon={<BadgeDollarSign size={17} strokeWidth={1.5} />} onClick={() => nav(existing ? `/sales?view=deals&status=all&id=${existing.id}` : `/sales?view=deals&new=1&lead=${lead.id}`)}>
+                {existing ? 'Open Deal' : 'Add To Sales'}
+              </Button>
+            )
+          })()}
       </div>
 
       {/* Stage */}

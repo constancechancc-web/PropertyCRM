@@ -65,7 +65,7 @@ npm install
 ```bash
 npm run dev
 ```
-Open http://localhost:5173. Without a `DATABASE_URL`, the app uses a local Postgres (PGlite) stored in `.data/pglite`, created with three test users: `constance@example.com` (admin), `assistant@example.com` (staff) and `outsider@example.com` (no access). Their password is `DEV_USER_PASSWORD` from `.env` (default in `.env.example`). Delete `.data/` to start fresh.
+Open http://localhost:5173. `npm run dev` always uses a separate local test database (PGlite, stored in `.data/pglite`), never your live data. It is created with three test users: `constance@example.com` (admin), `assistant@example.com` (staff) and `outsider@example.com` (no access), with the password `crm-local-dev` (or `DEV_USER_PASSWORD` if set in your shell). Delete `.data/` to start fresh. The `.env` file is only read by the `npm run db:*` and `npm run user:*` commands, which work on the live database when `DATABASE_URL` is filled in.
 
 Tests (parsers, rent message, matching, exports, and real Postgres permission checks):
 ```bash

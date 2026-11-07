@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Building2, ClipboardPaste, MessageCircle, Pencil, Plus, Trash2 } from 'lucide-react'
+import { BadgeDollarSign, Building2, ClipboardPaste, MessageCircle, Pencil, Plus, Trash2 } from 'lucide-react'
 import { PageShell, headerBtn } from '../components/Shell'
 import { Sheet } from '../components/Sheet'
 import { useToast } from '../components/Toast'
@@ -238,6 +238,11 @@ function ListingDetail({ listing }: { listing: Listing }) {
         <Button icon={<Pencil size={17} strokeWidth={1.5} />} onClick={() => open({ id: listing.id, edit: '1' })}>
           Edit
         </Button>
+        {admin && (
+          <Button icon={<BadgeDollarSign size={17} strokeWidth={1.5} />} onClick={() => nav(`/sales?view=deals&new=1&listing=${listing.id}`)}>
+            Add To Sales
+          </Button>
+        )}
       </div>
 
       <DetailGrid

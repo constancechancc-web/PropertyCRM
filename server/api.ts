@@ -15,7 +15,7 @@ export interface ApiResponse {
   headers?: Record<string, string>
 }
 
-const TABLES = ['contacts', 'listings', 'leads', 'lead_notes', 'tenancies', 'tenancy_payments'] as const
+const TABLES = ['contacts', 'listings', 'leads', 'lead_notes', 'tenancies', 'tenancy_payments', 'deals'] as const
 type Table = (typeof TABLES)[number]
 
 /** Columns the app may write, per table. Anything else in a request is ignored. */
@@ -26,6 +26,7 @@ const COLUMNS: Record<Table, string[]> = {
   lead_notes: ['id', 'lead_id', 'text', 'created_at'],
   tenancies: ['id', 'tenant_name', 'phone', 'address', 'start_date', 'end_date', 'pay_day', 'rent', 'account_holder', 'bank', 'account_number', 'is_example'],
   tenancy_payments: ['id', 'tenancy_id', 'month', 'paid'],
+  deals: ['id', 'contact_id', 'lead_id', 'listing_id', 'deal', 'property_type', 'area', 'address', 'price', 'commission', 'status', 'forecast_date', 'expected_date', 'converted_date', 'gone_date', 'gone_reason', 'claimed_amount', 'claimed_date', 'note', 'is_example'],
 }
 
 const ok = (body: unknown, headers?: Record<string, string>): ApiResponse => ({ status: 200, body, headers })
@@ -167,7 +168,7 @@ async function setPaid(q: Q, body: unknown) {
 async function removeExamples(q: Q, role: string) {
   if (role !== 'admin') throw new HttpError(403, 'not_allowed', 'Only Constance can remove examples.')
   let n = 0
-  for (const t of ['leads', 'tenancies', 'listings', 'contacts'] as const) {
+  for (const t of ['deals', 'leads', 'tenancies', 'listings', 'contacts'] as const) {
     n += (await q.query(`delete from public.${t} where is_example returning id`)).rows.length
   }
   return { removed: n }

@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Building2, CalendarClock, ClipboardPaste, House, KeyRound, LogOut, Plus, UserPlus, Users, UserRound, Inbox } from 'lucide-react'
+import { BadgeDollarSign, Building2, CalendarClock, ClipboardPaste, House, KeyRound, LogOut, Plus, UserPlus, Users, UserRound, Inbox } from 'lucide-react'
 import { useAuth } from '../data/auth'
 import { OWNER_NAME, REN } from '../lib/constants'
 import { Button, Chip, cx, IconWell } from './ui'
@@ -12,7 +12,13 @@ export const NAV = [
   { to: '/listings', label: 'Listings', icon: Building2 },
   { to: '/contacts', label: 'Contacts', icon: Users },
   { to: '/rent', label: 'Rent', icon: KeyRound },
+  { to: '/sales', label: 'Sales', icon: BadgeDollarSign, adminOnly: true },
 ] as const
+
+function useNav() {
+  const { role } = useAuth()
+  return NAV.filter((n) => !('adminOnly' in n) || role === 'admin')
+}
 
 export function Logo({ size }: { size: number }) {
   const [broken, setBroken] = useState(false)
@@ -64,6 +70,7 @@ function AccountSheet({ open, onClose }: { open: boolean; onClose: () => void })
 
 export function AddMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const nav = useNavigate()
+  const { role } = useAuth()
   const go = (to: string) => {
     onClose()
     nav(to)
@@ -75,6 +82,7 @@ export function AddMenu({ open, onClose }: { open: boolean; onClose: () => void 
     { label: 'New Tenancy', to: '/rent?new=1', icon: CalendarClock, tone: 4 },
     { label: 'Paste Lead From WhatsApp', to: '/leads?paste=1', icon: ClipboardPaste, tone: 5 },
     { label: 'Paste Listing From WhatsApp', to: '/listings?paste=1', icon: ClipboardPaste, tone: 3 },
+    ...(role === 'admin' ? [{ label: 'New Deal', to: '/sales?new=1', icon: BadgeDollarSign, tone: 1 }] : []),
   ]
   return (
     <Sheet open={open} onClose={onClose} title="Add">
@@ -96,6 +104,7 @@ export function AddMenu({ open, onClose }: { open: boolean; onClose: () => void 
 
 function TopBar({ onAdd }: { onAdd: () => void }) {
   const { email, role, signOut } = useAuth()
+  const nav = useNav()
   const [account, setAccount] = useState(false)
   return (
     <div className="flex items-center justify-between gap-3 pt-[max(1rem,env(safe-area-inset-top))]">
@@ -108,11 +117,11 @@ function TopBar({ onAdd }: { onAdd: () => void }) {
       </div>
 
       <nav aria-label="Main" className="hidden items-center gap-1 rounded-full bg-white/70 p-1 backdrop-blur md:flex">
-        {NAV.map((n) => (
+        {nav.map((n) => (
           <NavLink
             key={n.to}
             to={n.to}
-            className={({ isActive }) => cx('inline-flex min-h-10 items-center rounded-full px-4 text-[15px] font-medium transition-colors', isActive ? 'bg-brand-soft text-brand-ink' : 'text-ink/70 hover:text-ink')}
+            className={({ isActive }) => cx('inline-flex min-h-10 items-center rounded-full px-4 text-[15px] font-medium transition-colors', isActive ? 'bg-brand-soft text-brand-ink' : 'text-ink/70 hover:text-ink', nav.length > 5 && 'px-3')}
           >
             {n.label}
           </NavLink>
@@ -146,8 +155,9 @@ function TopBar({ onAdd }: { onAdd: () => void }) {
 }
 
 function BottomNav({ onAdd }: { onAdd: () => void }) {
-  const left = NAV.slice(0, 2)
-  const right = NAV.slice(2)
+  const nav = useNav()
+  const left = nav.slice(0, 2)
+  const right = nav.slice(2)
   const item = (n: (typeof NAV)[number]) => (
     <NavLink
       key={n.to}
@@ -156,7 +166,7 @@ function BottomNav({ onAdd }: { onAdd: () => void }) {
     >
       {({ isActive }) => (
         <>
-          <span className={cx('inline-flex h-7 w-11 items-center justify-center rounded-full', isActive && 'bg-brand-soft')}>
+          <span className={cx('inline-flex h-7 w-10 items-center justify-center rounded-full', isActive && 'bg-brand-soft')}>
             <n.icon size={19} strokeWidth={1.5} />
           </span>
           {n.label}

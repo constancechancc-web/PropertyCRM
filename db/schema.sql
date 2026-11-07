@@ -209,6 +209,34 @@ create table if not exists public.tenancy_payments (
   unique (tenancy_id, month)
 );
 
+-- Sales: one row per deal. Forecast -> Converted (or Gone) -> Claimed. Admin only (commission is private).
+create table if not exists public.deals (
+  id              uuid primary key default gen_random_uuid(),
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now(),
+  created_by      uuid references public.app_users(id) on delete set null default public.current_app_user(),
+  contact_id      uuid references public.contacts(id) on delete set null,
+  lead_id         uuid references public.leads(id) on delete set null,
+  listing_id      uuid references public.listings(id) on delete set null,
+  deal            text not null default 'sale' check (deal in ('sale', 'rent')),
+  property_type   text,
+  area            text,
+  address         text,
+  price           numeric,
+  commission      numeric,
+  status          text not null default 'forecast' check (status in ('forecast', 'converted', 'gone', 'claimed')),
+  forecast_date   date not null default current_date,
+  expected_date   date,
+  converted_date  date,
+  gone_date       date,
+  gone_reason     text,
+  claimed_amount  numeric,
+  claimed_date    date,
+  note            text,
+  is_example      boolean not null default false
+);
+create index if not exists deals_status_idx on public.deals (status);
+
 create index if not exists listings_owner_idx on public.listings (owner_id);
 create index if not exists leads_contact_idx on public.leads (contact_id);
 create index if not exists lead_notes_lead_idx on public.lead_notes (lead_id);
@@ -229,7 +257,8 @@ alter table public.change_log enable row level security;
 revoke all on table public.change_log from crm_app;
 grant select on table public.change_log to crm_app;
 drop policy if exists change_log_select on public.change_log;
-create policy change_log_select on public.change_log for select to crm_app using (public.my_role() is not null);
+create policy change_log_select on public.change_log for select to crm_app
+  using (public.my_role() is not null and (tbl <> 'deals' or public.my_role() = 'admin'));
 
 create or replace function public.log_change()
 returns trigger
@@ -255,7 +284,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['contacts', 'listings', 'leads', 'lead_notes', 'tenancies', 'tenancy_payments'] loop
+  foreach t in array array['contacts', 'listings', 'leads', 'lead_notes', 'tenancies', 'tenancy_payments', 'deals'] loop
     execute format('drop trigger if exists %I on public.%I', t || '_touch', t);
     execute format('create trigger %I before update on public.%I for each row execute function public.touch_updated_at()', t || '_touch', t);
     execute format('drop trigger if exists %I on public.%I', t || '_log', t);
@@ -277,3 +306,14 @@ begin
 end $$;
 
 grant usage, select on sequence public.change_log_seq_seq to crm_app;
+
+-- Sales is private to the admin: replace the shared policies on deals with admin-only ones.
+drop policy if exists deals_select on public.deals;
+drop policy if exists deals_insert on public.deals;
+drop policy if exists deals_update on public.deals;
+drop policy if exists deals_delete on public.deals;
+create policy deals_select on public.deals for select to crm_app using (public.my_role() = 'admin');
+create policy deals_insert on public.deals for insert to crm_app with check (public.my_role() = 'admin');
+create policy deals_update on public.deals for update to crm_app using (public.my_role() = 'admin') with check (public.my_role() = 'admin');
+create policy deals_delete on public.deals for delete to crm_app using (public.my_role() = 'admin');
+

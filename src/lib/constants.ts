@@ -97,3 +97,22 @@ export const JB_AREAS = [
   'Taman Abad', 'Majidee', 'Taman Sri Tebrau', 'Sri Tebrau', 'Taman Ungku Tun Aminah', 'Ungku Tun Aminah',
   'Bukit Mewah', 'Saleng', 'Indahpura', 'Taman Mount Austin', 'JB Town', 'Taman Perling', 'Taman Nusa Bestari',
 ] as const
+
+export const DEAL_STATUSES = ['forecast', 'converted', 'gone', 'claimed'] as const
+export const DEAL_STATUS_LABEL: Record<(typeof DEAL_STATUSES)[number], string> = {
+  forecast: 'Forecast',
+  converted: 'Converted',
+  gone: 'Gone',
+  claimed: 'Claimed',
+}
+
+export const GONE_REASONS = [
+  'Price',
+  'Financing / Loan Rejected',
+  'Buyer Backed Out',
+  'Owner Backed Out',
+  'Found Another Unit',
+  'Low Valuation',
+  'Timing',
+  'Other',
+] as const

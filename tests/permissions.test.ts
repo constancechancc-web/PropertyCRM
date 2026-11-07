@@ -117,4 +117,21 @@ describe('permissions', () => {
     expect(after.status).toBe(401)
     await db.owner.query("update app_users set password_changed_at = now() - interval '1 second' where email = 'helper@test.local'")
   })
+
+  it('sales deals are admin only, enforced by the database', async () => {
+    const admin = await signIn('boss@test.local')
+    const staff = await signIn('helper@test.local')
+    const before = ((await call('GET', '/api/data', undefined, staff)).body as { cursor: number }).cursor
+    const add = await call('POST', '/api/rows/deals', { row: { deal: 'sale', commission: 12000 } }, admin)
+    expect(add.status).toBe(200)
+    const id = (add.body as { id: string }).id
+    const staffData = (await call('GET', '/api/data', undefined, staff)).body as { deals: unknown[] }
+    expect(staffData.deals).toHaveLength(0)
+    const adminData = (await call('GET', '/api/data', undefined, admin)).body as { deals: { id: string }[] }
+    expect(adminData.deals.map((d) => d.id)).toContain(id)
+    expect((await call('POST', '/api/rows/deals', { row: { deal: 'rent' } }, staff)).status).toBe(403)
+    expect((await call('PATCH', '/api/rows/deals/' + id, { patch: { commission: 1 } }, staff)).status).toBe(404)
+    const feed = (await call('GET', '/api/changes?after=' + before, undefined, staff)).body as { changes: { table: string }[] }
+    expect(feed.changes.some((c) => c.table === 'deals')).toBe(false)
+  })
 })

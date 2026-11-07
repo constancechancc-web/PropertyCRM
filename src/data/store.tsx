@@ -6,7 +6,7 @@ import { TABLES, type DB, type Lead, type Listing, type RowOf, type TableName } 
 import { NO_ACCESS, useAuth } from './auth'
 import { SAVE_FAILED, useToast } from '../components/Toast'
 
-const EMPTY: DB = { contacts: [], listings: [], leads: [], lead_notes: [], tenancies: [], tenancy_payments: [] }
+const EMPTY: DB = { contacts: [], listings: [], leads: [], lead_notes: [], tenancies: [], tenancy_payments: [], deals: [] }
 const POLL_MS = 3000
 
 interface Store {

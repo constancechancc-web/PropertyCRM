@@ -78,6 +78,30 @@ export interface TenancyPayment extends Base {
   paid: boolean
 }
 
+export type DealStatus = 'forecast' | 'converted' | 'gone' | 'claimed'
+
+export interface SaleDeal extends Base {
+  contact_id: string | null
+  lead_id: string | null
+  listing_id: string | null
+  deal: Deal
+  property_type: string | null
+  area: string | null
+  address: string | null
+  price: number | null
+  commission: number | null
+  status: DealStatus
+  forecast_date: string
+  expected_date: string | null
+  converted_date: string | null
+  gone_date: string | null
+  gone_reason: string | null
+  claimed_amount: number | null
+  claimed_date: string | null
+  note: string | null
+  is_example: boolean
+}
+
 export interface DB {
   contacts: Contact[]
   listings: Listing[]
@@ -85,9 +109,10 @@ export interface DB {
   lead_notes: LeadNote[]
   tenancies: Tenancy[]
   tenancy_payments: TenancyPayment[]
+  deals: SaleDeal[]
 }
 
 export type TableName = keyof DB
-export const TABLES: TableName[] = ['contacts', 'listings', 'leads', 'lead_notes', 'tenancies', 'tenancy_payments']
+export const TABLES: TableName[] = ['contacts', 'listings', 'leads', 'lead_notes', 'tenancies', 'tenancy_payments', 'deals']
 
 export type RowOf<T extends TableName> = DB[T][number]

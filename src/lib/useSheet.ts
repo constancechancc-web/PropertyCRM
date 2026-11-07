@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
-const SHEET_KEYS = ['id', 'edit', 'new', 'paste', 'contact', 'owner']
+const SHEET_KEYS = ['id', 'edit', 'new', 'paste', 'contact', 'owner', 'lead', 'listing']
 
 /** Record sheets live in the URL (?id=…, ?new=1, ?paste=1) so the back button closes them. */
 export function useSheet() {
