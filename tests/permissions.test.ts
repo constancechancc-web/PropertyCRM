@@ -107,4 +107,14 @@ describe('permissions', () => {
     const feed2 = (await call('GET', `/api/changes?after=${start.cursor}`, undefined, b)).body as typeof feed
     expect(feed2.changes.some((c) => c.id === id && c.op === 'delete')).toBe(true)
   })
+
+  it('changing a password signs out sessions made with the old one', async () => {
+    const old = await signIn('helper@test.local')
+    expect((await call('GET', '/api/me', undefined, old)).status).toBe(200)
+    // what `npm run user:add` does when a password changes (one second later, as in real life)
+    await db.owner.query("update app_users set password_changed_at = now() + interval '1 second' where email = 'helper@test.local'")
+    const after = await call('GET', '/api/me', undefined, old)
+    expect(after.status).toBe(401)
+    await db.owner.query("update app_users set password_changed_at = now() - interval '1 second' where email = 'helper@test.local'")
+  })
 })

@@ -58,6 +58,8 @@ create table if not exists public.app_users (
   password_hash  text not null,
   created_at     timestamptz not null default now()
 );
+-- Sign-ins issued before this moment stop working (set when the password changes).
+alter table public.app_users add column if not exists password_changed_at timestamptz not null default now();
 create unique index if not exists app_users_email_lower on public.app_users (lower(email));
 -- Only the owner connection (login code, user scripts) touches app_users.
 revoke all on table public.app_users from crm_app;

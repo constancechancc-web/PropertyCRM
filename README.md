@@ -29,14 +29,14 @@ You only do this once.
 ### 3. Create the two logins
 There is no public sign-up. On your computer, in this folder:
 1. Copy `.env.example` to `.env`. Paste the `DATABASE_URL` value from Vercel (**Storage → your database → .env.local tab**) into it.
-2. Run, with your real emails and strong passwords:
+2. Run these (on Windows PowerShell use `npm.cmd` instead of `npm`). You'll be asked to type the password twice; it stays hidden and isn't saved in your command history:
    ```bash
-   npm run user:add -- constance@yourmail.com "a-strong-password" admin
+   npm run user:add -- constance@yourmail.com admin
    ```
    ```bash
-   npm run user:add -- assistant@yourmail.com "another-strong-password" staff
+   npm run user:add -- assistant@yourmail.com staff
    ```
-   Running the same command again changes that person's password or role. To take away someone's access:
+   **To change a password**, run the same command again. Every device signed in with the old password is signed out. To take away someone's access:
    ```bash
    npm run user:remove -- assistant@yourmail.com
    ```

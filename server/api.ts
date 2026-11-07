@@ -84,6 +84,12 @@ async function withUser<T>(req: ApiRequest, fn: (q: Q, role: 'admin' | 'staff', 
   const t = readToken(cookies[COOKIE])
   if (!t) throw new HttpError(401, 'signed_out')
   const db = await getDb()
+  // A password change (or a removed login) ends every sign-in made before it.
+  const acct = await db.owner.query<{ changed: number }>(
+    'select floor(extract(epoch from password_changed_at))::bigint as changed from app_users where id = $1',
+    [t.uid],
+  )
+  if (!acct.rows[0] || !t.iat || t.iat < Number(acct.rows[0].changed)) throw new HttpError(401, 'signed_out')
   const user = { id: t.uid, email: t.email }
   return db.asUser(user, async (q) => {
     const role = (await q.query<{ r: 'admin' | 'staff' | null }>('select public.my_role() as r')).rows[0].r

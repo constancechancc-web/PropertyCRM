@@ -30,11 +30,13 @@ function sign(data: string): string {
 export interface TokenData {
   uid: string
   email: string
+  iat: number
   exp: number
 }
 
 export function makeToken(uid: string, email: string): string {
-  const body = b64(JSON.stringify({ uid, email, exp: Math.floor(Date.now() / 1000) + MAX_AGE }))
+  const now = Math.floor(Date.now() / 1000)
+  const body = b64(JSON.stringify({ uid, email, iat: now, exp: now + MAX_AGE }))
   return `${body}.${sign(body)}`
 }
 
