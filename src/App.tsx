@@ -40,7 +40,8 @@ function Routed() {
       <Route path="/leads" element={<Leads />} />
       <Route path="/listings" element={<Listings />} />
       <Route path="/contacts" element={<Contacts />} />
-      <Route path="/rent" element={<Rent />} />
+      <Route path="/tenancy" element={<Rent />} />
+      <Route path="/rent" element={<Navigate to="/tenancy" replace />} />
       <Route path="/sales" element={<Sales />} />
       <Route path="*" element={<Navigate to="/today" replace />} />
     </Routes>

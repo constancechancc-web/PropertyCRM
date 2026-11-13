@@ -11,7 +11,7 @@ export const NAV = [
   { to: '/leads', label: 'Leads', icon: Inbox },
   { to: '/listings', label: 'Listings', icon: Building2 },
   { to: '/contacts', label: 'Contacts', icon: Users },
-  { to: '/rent', label: 'Rent', icon: KeyRound },
+  { to: '/tenancy', label: 'Tenancy', icon: KeyRound },
   { to: '/sales', label: 'Sales', icon: BadgeDollarSign, adminOnly: true },
 ] as const
 
@@ -79,7 +79,7 @@ export function AddMenu({ open, onClose }: { open: boolean; onClose: () => void 
     { label: 'New Lead', to: '/leads?new=1', icon: Inbox, tone: 2 },
     { label: 'New Listing', to: '/listings?new=1', icon: Building2, tone: 0 },
     { label: 'New Contact', to: '/contacts?new=1', icon: UserPlus, tone: 1 },
-    { label: 'New Tenancy', to: '/rent?new=1', icon: CalendarClock, tone: 4 },
+    { label: 'New Tenancy', to: '/tenancy?new=1', icon: CalendarClock, tone: 4 },
     { label: 'Paste Lead From WhatsApp', to: '/leads?paste=1', icon: ClipboardPaste, tone: 5 },
     { label: 'Paste Listing From WhatsApp', to: '/listings?paste=1', icon: ClipboardPaste, tone: 3 },
     ...(role === 'admin' ? [{ label: 'New Deal', to: '/sales?new=1', icon: BadgeDollarSign, tone: 1 }] : []),

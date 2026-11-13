@@ -65,7 +65,7 @@ export default function Rent() {
 
   return (
     <PageShell
-      title="Rent Reminders"
+      title="Tenancy Reminders"
       sub="Monthly rental reminders for your tenants"
       actions={
         <Button size="sm" variant="primary" icon={<Plus size={16} strokeWidth={1.5} />} onClick={() => open({ new: '1' })}>

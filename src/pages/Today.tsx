@@ -276,12 +276,12 @@ export default function Today() {
           </Card>
 
           <Card className="flex flex-col gap-4 p-5 md:p-6">
-            <SectionTitle action={<RoundLink to="/rent?show=due" label="Open Rent Reminders" />}>Rent Due</SectionTitle>
+            <SectionTitle action={<RoundLink to="/tenancy?show=due" label="Open Tenancy Reminders" />}>Rent Due</SectionTitle>
             {s.rentDue.length ? (
               <ul className="divide-y divide-line overflow-hidden rounded-[18px] border border-line">
                 {s.rentDue.map(({ t, st }) => (
                   <li key={t.id}>
-                    <button type="button" onClick={() => nav(`/rent?id=${t.id}`)} className="flex w-full items-center gap-3 px-3 py-3 text-left hover:bg-page">
+                    <button type="button" onClick={() => nav(`/tenancy?id=${t.id}`)} className="flex w-full items-center gap-3 px-3 py-3 text-left hover:bg-page">
                       <Avatar id={t.id} name={t.tenant_name} size={38} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[15px] font-medium">{t.tenant_name}</span>
