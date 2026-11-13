@@ -150,3 +150,33 @@ export function hubBlock(lead: Lead, contact: Contact | undefined, notes: string
 export function notesNewestFirst(notes: LeadNote[], leadId: string): LeadNote[] {
   return notes.filter((n) => n.lead_id === leadId).sort((a, b) => b.created_at.localeCompare(a.created_at))
 }
+
+// ---------------------------------------------------------------------------
+// Tenancy period → expiry date
+// ---------------------------------------------------------------------------
+
+/** Expiry date for a tenancy starting on `start` that runs `months` months: the day before the same date N months later.
+ *  20/03/2026 + 12 months → 19/03/2027. When that date doesn't exist (31 Jan + 1 month), the period ends on the last day of the month. */
+export function tenancyEnd(start: string, months: number): string {
+  const s = parseISODate(start)
+  const y = s.getFullYear()
+  const m = s.getMonth() + months
+  const target = new Date(y, m, 1)
+  const dim = daysInMonth(target.getFullYear(), target.getMonth())
+  const anniversary = s.getDate() > dim ? new Date(target.getFullYear(), target.getMonth() + 1, 1) : new Date(target.getFullYear(), target.getMonth(), s.getDate())
+  anniversary.setDate(anniversary.getDate() - 1)
+  return toISODate(anniversary)
+}
+
+/** Whole number of months between start and end, if end is exactly a tenancy expiry; otherwise null. */
+export function tenancyMonths(start: string | null, end: string | null): number | null {
+  if (!start || !end) return null
+  for (let m = 1; m <= 120; m++) if (tenancyEnd(start, m) === end) return m
+  return null
+}
+
+export function periodLabel(months: number): string {
+  if (months % 12 === 0) return months === 12 ? '1 Year' : `${months / 12} Years`
+  if (months > 12) return `${Math.floor(months / 12)} ${months < 24 ? 'Year' : 'Years'} ${months % 12} ${months % 12 === 1 ? 'Month' : 'Months'}`
+  return `${months} ${months === 1 ? 'Month' : 'Months'}`
+}

@@ -136,3 +136,24 @@ describe('Listing Hub block (§9)', () => {
     expect(hubBlock(lead, c, 'a\nb')).toContain('Notes: a · b')
   })
 })
+
+import { periodLabel, tenancyEnd, tenancyMonths } from '../src/lib/logic'
+
+describe('tenancy period', () => {
+  it('works out the expiry date', () => {
+    expect(tenancyEnd('2026-03-20', 12)).toBe('2027-03-19')
+    expect(tenancyEnd('2026-03-01', 12)).toBe('2027-02-28')
+    expect(tenancyEnd('2027-03-01', 12)).toBe('2028-02-29') // leap year
+    expect(tenancyEnd('2026-01-31', 1)).toBe('2026-02-28')
+    expect(tenancyEnd('2026-08-15', 6)).toBe('2027-02-14')
+    expect(tenancyEnd('2026-11-13', 24)).toBe('2028-11-12')
+  })
+  it('recognises the period of an existing tenancy', () => {
+    expect(tenancyMonths('2026-03-20', '2027-03-19')).toBe(12)
+    expect(tenancyMonths('2026-03-20', '2027-03-25')).toBeNull()
+    expect(periodLabel(12)).toBe('1 Year')
+    expect(periodLabel(24)).toBe('2 Years')
+    expect(periodLabel(6)).toBe('6 Months')
+    expect(periodLabel(18)).toBe('1 Year 6 Months')
+  })
+})

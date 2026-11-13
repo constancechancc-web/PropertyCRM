@@ -3,14 +3,22 @@ import { CalendarCheck, Copy, MessageCircle, Pencil, Plus, Trash2, Undo2 } from 
 import { PageShell } from '../components/Shell'
 import { Sheet } from '../components/Sheet'
 import { useToast } from '../components/Toast'
-import { Avatar, Button, Card, Chip, ConfirmButton, DetailGrid, Dot, Empty, LinkButton, Pill, PillRow, SearchBox, SectionTitle, TextInput } from '../components/ui'
+import { Avatar, Button, Card, Chip, ChoicePills, ConfirmButton, DetailGrid, Dot, Empty, LinkButton, Pill, PillRow, SearchBox, SectionTitle, TextInput } from '../components/ui'
 import { useIsAdmin } from '../data/auth'
 import { useStore } from '../data/store'
 import { BANKS } from '../lib/constants'
 import { fmtDate, fmtNumber, monthName, monthYear, rmFull, waLink } from '../lib/format'
-import { isDueSoon, isPaid, rentMessage, rentStatus, type RentStatus } from '../lib/logic'
+import { isDueSoon, isPaid, periodLabel, rentMessage, rentStatus, tenancyEnd, tenancyMonths, type RentStatus } from '../lib/logic'
 import { useSheet } from '../lib/useSheet'
 import type { Tenancy } from '../lib/types'
+
+const PERIODS = [
+  { value: '6', label: '6 Months' },
+  { value: '12', label: '1 Year' },
+  { value: '24', label: '2 Years' },
+  { value: '36', label: '3 Years' },
+  { value: 'other', label: 'Other' },
+]
 
 type Filter = 'active' | 'due' | 'ending' | 'ended' | 'all'
 
@@ -205,7 +213,8 @@ function TenancyDetail({ tenancy: t }: { tenancy: Tenancy }) {
           ['WhatsApp Number', t.phone],
           ['Rental', t.rent != null ? `${rmFull(t.rent)} /mo` : null],
           ['Tenancy Starts', fmtDate(t.start_date)],
-          ['Tenancy Ends', fmtDate(t.end_date)],
+          ['Tenancy Period', (() => { const m = tenancyMonths(t.start_date, t.end_date); return m ? periodLabel(m) : null })()],
+          ['Expires On', fmtDate(t.end_date)],
           ['Rent Payment Date', t.pay_day ? `Day ${t.pay_day} of each month` : null],
           ['This Month Due', fmtDate(s.dueDate)],
           ['Account Holder', t.account_holder],
@@ -266,11 +275,26 @@ function TenancyForm({ tenancy, onDone }: { tenancy?: Tenancy; onDone: (id?: str
   const [busy, setBusy] = useState(false)
   const set = (k: keyof typeof v, val: string) => setV((p) => ({ ...p, [k]: val }))
 
+  // Tenancy period: pick 6 months / 1, 2, 3 years or type the months; the expiry date is worked out.
+  const existingMonths = tenancyMonths(tenancy?.start_date ?? null, tenancy?.end_date ?? null)
+  const [period, setPeriod] = useState<string>(() =>
+    existingMonths ? (PERIODS.some((p) => p.value === String(existingMonths)) ? String(existingMonths) : 'other') : tenancy?.end_date ? '' : '12',
+  )
+  const [otherMonths, setOtherMonths] = useState(existingMonths && !PERIODS.some((p) => p.value === String(existingMonths)) ? String(existingMonths) : '')
+  const months = period === 'other' ? parseInt(otherMonths, 10) : period ? parseInt(period, 10) : NaN
+  const validMonths = Number.isFinite(months) && months >= 1 && months <= 120
+  // An older tenancy whose end date isn't a whole number of months keeps its date until a period is picked.
+  const endDate = v.start_date && validMonths ? tenancyEnd(v.start_date, months) : !period ? v.end_date : ''
+
+  const setStart = (d: string) => {
+    setV((p) => ({ ...p, start_date: d, pay_day: p.pay_day || (d ? String(Number(d.slice(8, 10))) : '') }))
+  }
+
   const save = async () => {
     if (!v.tenant_name.trim()) return setError("Add the tenant's name.")
     const day = v.pay_day ? parseInt(v.pay_day, 10) : null
     if (day != null && (!(day >= 1) || day > 31)) return setError('Rent payment date must be a day between 1 and 31.')
-    if (v.start_date && v.end_date && v.end_date < v.start_date) return setError('The tenancy must end after it starts.')
+    if (period === 'other' && !validMonths) return setError('Type the tenancy period in months, from 1 to 120.')
     const rent = parseFloat(v.rent.replace(/[^\d.]/g, ''))
     setBusy(true)
     const row: Partial<Tenancy> = {
@@ -278,7 +302,7 @@ function TenancyForm({ tenancy, onDone }: { tenancy?: Tenancy; onDone: (id?: str
       phone: v.phone.trim() || null,
       address: v.address.replace(/\s*\n\s*/g, ', ').trim() || null,
       start_date: v.start_date || null,
-      end_date: v.end_date || null,
+      end_date: endDate || null,
       pay_day: day,
       rent: Number.isFinite(rent) ? rent : null,
       account_holder: v.account_holder.trim() || null,
@@ -313,9 +337,25 @@ function TenancyForm({ tenancy, onDone }: { tenancy?: Tenancy; onDone: (id?: str
       <TextInput label="Tenant Name" value={v.tenant_name} onChange={(e) => set('tenant_name', e.target.value)} autoComplete="off" />
       <TextInput label="WhatsApp Number" inputMode="tel" value={v.phone} onChange={(e) => set('phone', e.target.value)} placeholder="012-345 6789" autoComplete="off" />
       <TextInput label="Address" value={v.address} onChange={(e) => set('address', e.target.value)} />
+      <TextInput label="Tenancy Starts" type="date" value={v.start_date} onChange={(e) => setStart(e.target.value)} />
+      <div className="flex flex-col gap-3">
+        <ChoicePills label="Tenancy Period" options={PERIODS} value={period || null} onChange={(p) => setPeriod((p as string) ?? '')} />
+        {period === 'other' && (
+          <TextInput label="Number Of Months" inputMode="numeric" value={otherMonths} onChange={(e) => setOtherMonths(e.target.value.replace(/\D/g, ''))} placeholder="e.g. 18" />
+        )}
+        <div className="flex items-center gap-3 rounded-[18px] bg-brand-soft px-4 py-3 text-[15px] text-brand-ink">
+          <CalendarCheck size={18} strokeWidth={1.5} className="shrink-0" />
+          {endDate ? (
+            <span>
+              Expires on <span className="font-semibold">{fmtDate(endDate)}</span>
+              {validMonths ? ` (${periodLabel(months)})` : ''}
+            </span>
+          ) : (
+            <span>{v.start_date ? 'Pick the tenancy period to see the expiry date.' : 'Pick the start date and period to see the expiry date.'}</span>
+          )}
+        </div>
+      </div>
       <div className="grid grid-cols-2 gap-3">
-        <TextInput label="Tenancy Starts" type="date" value={v.start_date} onChange={(e) => set('start_date', e.target.value)} />
-        <TextInput label="Tenancy Ends" type="date" value={v.end_date} onChange={(e) => set('end_date', e.target.value)} />
         <TextInput label="Rent Payment Date" inputMode="numeric" value={v.pay_day} onChange={(e) => set('pay_day', e.target.value)} placeholder="e.g. 20" hint="Day of the month" />
         <TextInput label="Rental (RM per month)" inputMode="decimal" value={v.rent} onChange={(e) => set('rent', e.target.value)} />
       </div>
