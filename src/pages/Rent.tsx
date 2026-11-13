@@ -8,7 +8,7 @@ import { useIsAdmin } from '../data/auth'
 import { useStore } from '../data/store'
 import { BANKS } from '../lib/constants'
 import { fmtDate, fmtNumber, monthName, monthYear, rmFull, waLink } from '../lib/format'
-import { isDueSoon, isPaid, periodLabel, rentMessage, rentStatus, tenancyEnd, tenancyMonths, type RentStatus } from '../lib/logic'
+import { defaultPayDay, isDueSoon, isPaid, periodLabel, rentMessage, rentStatus, tenancyEnd, tenancyMonths, type RentStatus } from '../lib/logic'
 import { useSheet } from '../lib/useSheet'
 import type { Tenancy } from '../lib/types'
 
@@ -286,8 +286,14 @@ function TenancyForm({ tenancy, onDone }: { tenancy?: Tenancy; onDone: (id?: str
   // An older tenancy whose end date isn't a whole number of months keeps its date until a period is picked.
   const endDate = v.start_date && validMonths ? tenancyEnd(v.start_date, months) : !period ? v.end_date : ''
 
+  // Rent payment date defaults to the 7th day counting from the start (1st → 7th, 15th → 21st),
+  // and follows the start date until it's typed in by hand.
   const setStart = (d: string) => {
-    setV((p) => ({ ...p, start_date: d, pay_day: p.pay_day || (d ? String(Number(d.slice(8, 10))) : '') }))
+    setV((p) => {
+      const autoBefore = p.start_date ? String(defaultPayDay(p.start_date)) : ''
+      const followsStart = !p.pay_day || p.pay_day === autoBefore
+      return { ...p, start_date: d, pay_day: followsStart ? (d ? String(defaultPayDay(d)) : '') : p.pay_day }
+    })
   }
 
   const save = async () => {
@@ -356,7 +362,7 @@ function TenancyForm({ tenancy, onDone }: { tenancy?: Tenancy; onDone: (id?: str
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <TextInput label="Rent Payment Date" inputMode="numeric" value={v.pay_day} onChange={(e) => set('pay_day', e.target.value)} placeholder="e.g. 20" hint="Day of the month" />
+        <TextInput label="Rent Payment Date" inputMode="numeric" value={v.pay_day} onChange={(e) => set('pay_day', e.target.value)} placeholder="e.g. 7" hint="Day of the month. Set to the 7th day from the start; change it if needed." />
         <TextInput label="Rental (RM per month)" inputMode="decimal" value={v.rent} onChange={(e) => set('rent', e.target.value)} />
       </div>
       <fieldset className="flex flex-col gap-4 rounded-[18px] border border-line p-4">

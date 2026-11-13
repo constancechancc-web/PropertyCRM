@@ -180,3 +180,9 @@ export function periodLabel(months: number): string {
   if (months > 12) return `${Math.floor(months / 12)} ${months < 24 ? 'Year' : 'Years'} ${months % 12} ${months % 12 === 1 ? 'Month' : 'Months'}`
   return `${months} ${months === 1 ? 'Month' : 'Months'}`
 }
+
+/** Default rent payment day: the 7th day counting from the tenancy start (start day + 6).
+ *  1st → 7, 15th → 21, 28 January → 3 (runs into the next month). */
+export function defaultPayDay(start: string): number {
+  return Number(addDays(start, 6).slice(8, 10))
+}

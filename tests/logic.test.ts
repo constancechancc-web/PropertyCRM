@@ -157,3 +157,14 @@ describe('tenancy period', () => {
     expect(periodLabel(18)).toBe('1 Year 6 Months')
   })
 })
+
+import { defaultPayDay } from '../src/lib/logic'
+
+describe('default rent payment date', () => {
+  it('is the 7th day counting from the start', () => {
+    expect(defaultPayDay('2026-01-01')).toBe(7)
+    expect(defaultPayDay('2026-01-15')).toBe(21)
+    expect(defaultPayDay('2026-01-28')).toBe(3)
+    expect(defaultPayDay('2026-03-25')).toBe(31)
+  })
+})
