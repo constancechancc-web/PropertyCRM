@@ -58,7 +58,7 @@ export const CONTACT_ROLE_LABEL: Record<ContactRole, string> = {
 }
 
 export const FURNISHING = ['Unfurnished', 'Partly furnished', 'Fully furnished'] as const
-export const TENURE = ['Freehold', 'Leasehold', 'Malay reserve', 'Bumi lot'] as const
+export const TENURE = ['Freehold', 'Leasehold'] as const
 
 export const BANKS = [
   'Affin Bank',

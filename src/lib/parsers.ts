@@ -523,8 +523,6 @@ export function parseListing(text: string): ListingParse {
   let tenure: string | null = null
   if (/freehold|\bfh\b|永久/i.test(joined)) tenure = 'Freehold'
   else if (/leasehold|\blh\b|\d+\s*years?\s*lease|地契/i.test(joined)) tenure = 'Leasehold'
-  else if (/malay\s*reserve|马来保留/i.test(joined)) tenure = 'Malay reserve'
-  else if (/bumi(?:putera)?\s*lot|土著/i.test(joined)) tenure = 'Bumi lot'
 
   return { deal, type, address, price, builtUp, land, bedrooms, bathrooms, furnishing, tenure, ownerName, ownerPhone }
 }
