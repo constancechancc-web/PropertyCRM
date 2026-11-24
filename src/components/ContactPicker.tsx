@@ -12,9 +12,9 @@ export function ContactPicker({ label, contacts, value, onChange }: { label: str
   const results = useMemo(() => {
     const s = q.trim().toLowerCase()
     const digits = s.replace(/\D/g, '')
-    const list = s
-      ? contacts.filter((c) => c.name.toLowerCase().includes(s) || (digits.length >= 3 && (c.phone ?? '').replace(/\D/g, '').includes(digits)))
-      : contacts.slice().sort((a, b) => b.created_at.localeCompare(a.created_at))
+    // Only show names once something is typed, so the contact list isn't on screen by default.
+    if (!s) return []
+    const list = contacts.filter((c) => c.name.toLowerCase().includes(s) || (digits.length >= 3 && (c.phone ?? '').replace(/\D/g, '').includes(digits)))
     return list.slice(0, 6)
   }, [q, contacts])
 
@@ -89,6 +89,7 @@ export function ContactPicker({ label, contacts, value, onChange }: { label: str
               ))}
             </ul>
           )}
+          {q.trim() && results.length === 0 && <p className="px-1 text-[14px] text-text-2">No contact found. Add them as a new contact below.</p>}
           <div>
             <Button size="sm" variant="soft" icon={<Plus size={16} strokeWidth={1.5} />} onClick={() => onChange({ mode: 'new', name: q && !/\d/.test(q) ? q : '', phone: /\d{3}/.test(q) ? q : '', race: null })}>
               New Contact
