@@ -116,3 +116,6 @@ export const GONE_REASONS = [
   'Timing',
   'Other',
 ] as const
+
+/** Constance's own numbers: never read as an owner's phone when pasting her listing messages. */
+export const AGENT_PHONES = ['019-2288249'] as const

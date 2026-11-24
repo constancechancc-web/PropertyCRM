@@ -360,9 +360,10 @@ const num = (s: string) => {
   const n = parseFloat(s.replace(/[^\d.]/g, ''))
   return Number.isFinite(n) ? n : null
 }
+/** Whole number; "4+1" (rooms + utility room) counts as 5. */
 const int = (s: string) => {
-  const n = parseInt(s.replace(/\D/g, ''), 10)
-  return Number.isFinite(n) ? n : null
+  const parts = s.split('+').map((p) => parseInt(p.replace(/\D/g, ''), 10)).filter((n) => Number.isFinite(n))
+  return parts.length ? parts.reduce((a, b) => a + b, 0) : null
 }
 
 function ListingForm({ listing, initial, onDone }: { listing?: Listing; initial?: ListingFormValues; onDone: (id?: string) => void }) {
@@ -463,7 +464,7 @@ function ListingForm({ listing, initial, onDone }: { listing?: Listing; initial?
         <TextInput label={v.deal === 'rent' ? 'Rent Per Month (RM)' : 'Asking Price (RM)'} inputMode="decimal" value={v.price} onChange={(e) => set('price', e.target.value)} />
         <TextInput label="Built-up (sqft)" inputMode="decimal" value={v.builtUp} onChange={(e) => set('builtUp', e.target.value)} />
         <TextInput label="Land Size (sqft)" inputMode="decimal" value={v.land} onChange={(e) => set('land', e.target.value)} />
-        <TextInput label="Bedrooms" inputMode="numeric" value={v.bedrooms} onChange={(e) => set('bedrooms', e.target.value)} />
+        <TextInput label="Bedrooms" value={v.bedrooms} onChange={(e) => set('bedrooms', e.target.value)} hint="4+1 is saved as 5." />
         <TextInput label="Bathrooms" inputMode="numeric" value={v.bathrooms} onChange={(e) => set('bathrooms', e.target.value)} />
         <SelectInput label="Furnishing" options={FURNISHING} placeholder="Not set" value={v.furnishing} onChange={(e) => set('furnishing', e.target.value)} />
         <SelectInput label="Tenure" options={TENURE} placeholder="Not set" value={v.tenure} onChange={(e) => set('tenure', e.target.value)} />

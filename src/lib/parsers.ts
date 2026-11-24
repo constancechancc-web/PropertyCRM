@@ -1,5 +1,5 @@
 // Paste From WhatsApp parsers (§9). Pure functions, run in the browser, no AI.
-import { JB_AREAS, PROPERTY_TYPES, type Race } from './constants'
+import { AGENT_PHONES, JB_AREAS, PROPERTY_TYPES, type Race } from './constants'
 import type { Deal } from './types'
 
 // ---------------------------------------------------------------------------
@@ -119,9 +119,16 @@ export function detectTypes(text: string): string[] {
     t = t.replace(/factor(?:y|ies)|工厂|厂房/g, ' ')
   }
 
-  if (/low[\s-]?cost\s*(?:flat|apartment)|\bflats?\b|组屋/.test(t)) {
+  // "Flat" only as a unit type (not "Terrain: Flat").
+  const FLAT = /low[\s-]?cost\s*(?:flat|apartment)|组屋|^\s*flats?\s*$|\bflats?\s+(?:unit|for\s+(?:sale|rent))/gm
+  if (FLAT.test(t)) {
     out.add(T.lcFlat)
-    t = t.replace(/low[\s-]?cost\s*(?:flat|apartment)|\bflats?\b|组屋/g, ' ')
+    t = t.replace(FLAT, ' ')
+  }
+  // "Shop Apartment" is an apartment above shops, not a shop.
+  if (/shop\s*apartments?/.test(t)) {
+    out.add(T.condo)
+    t = t.replace(/shop\s*apartments?/g, ' ')
   }
   if (/low[\s-]?cost\s*(?:house|terrace)/.test(t)) {
     out.add(T.lcHouse)
@@ -145,11 +152,12 @@ export function detectTypes(text: string): string[] {
     t = t.replace(/shop\s*office|shop[\s-]?lots?|shop\s*house|shophouse|店屋|店面|商店/g, ' ')
   }
   if (/\bshops?\b/.test(t)) out.add(T.shop)
-  if (/\bland\b|土地|地皮/.test(t)) out.add(T.land)
+  if (/\bland\b|土地|地皮|agricultur|plantation|kebun|ladang|\bacres?\b|hektar|hectare/.test(t)) out.add(T.land)
 
   const terrace = /terrace|排屋|link\s*house|联排/.test(t)
   const otherLanded = cluster || semid || bungalow || town || out.has(T.lcHouse)
-  if (terrace || (STOREY_ANY.test(t) && !otherLanded)) {
+  // "Double Storey" alone means a terrace house, but "1.5 Storey Semi D Factory" or "3 Storey Shoplot" don't.
+  if (terrace || (STOREY_ANY.test(t) && !otherLanded && out.size === 0)) {
     const s = STOREY_SINGLE.test(t)
     const d = STOREY_DOUBLE.test(t)
     if (s && !d) out.add(T.single)
@@ -405,9 +413,29 @@ const SIZE_LINE = /sq\.?\s*ft|sqft|\d\s*sf\b|\bsf\b|built[\s-]?up|\bland\b[^a-z]
 const ROOM_LINE = /\d\s*(?:bed|bath|r\s*\d\s*b|rooms?|br\b|房)/i
 const ADDRESS_RE = /\b(?:jalan|jln|taman|tmn|lorong|lrg|persiaran|residensi|residence|residency|lebuh|lebuhraya|bandar|desa|bukit|kampung|kg|blok|block|menara|pangsapuri|plaza|pusat|kawasan|address)\b|\b\d{5}\b/i
 
+const AGENT_DIGITS = AGENT_PHONES.map((p) => p.replace(/\D/g, '').replace(/^0/, ''))
+/** A phone number in the line that isn't Constance's own. */
+function findOtherPhone(s: string): string | null {
+  for (const m of s.matchAll(new RegExp(PHONE_RE.source, 'g'))) {
+    const d = m[0].replace(/\D/g, '').replace(/^60/, '').replace(/^0/, '')
+    if (!AGENT_DIGITS.includes(d)) return m[0].trim()
+  }
+  return null
+}
+const isAgentLine = (l: string) => !!findPhone(l) && !findOtherPhone(l)
+const DEAL_LINE = /^(?:for\s*(?:sale|rent)|wts|wtr|wtl|to\s*let|出售|出租)\b[\s!.]*$/i
+const LABEL_LINE = /^[A-Za-z][A-Za-z ./]{1,25}\s*[:：]/
+const SIGNATURE = /www\.|https?:|wasap\.my|\bcomm(?:ission)?\b|\bremarks?\b|\bTRR\b|\bEAG\b/i
+
 export function parseListing(text: string): ListingParse {
   const lines = cleanLines(text)
   const joined = lines.join('\n')
+  // Blocks of lines separated by blank lines (WhatsApp listings usually put the location in one block).
+  const blocks = text
+    .replace(/\r\n?/g, '\n')
+    .split(/\n[ \t ]*\n/)
+    .map((b) => cleanLines(b))
+    .filter((b) => b.length)
 
   // Deal
   const s = joined.search(SALE_RE)
@@ -417,10 +445,10 @@ export function parseListing(text: string): ListingParse {
   // Owner
   let ownerName: string | null = null
   let ownerPhone: string | null = null
-  const ownerIdx = lines.findIndex((l) => OWNER_RE.test(l) && (findPhone(l) || /owner|landlord|屋主|业主|房东/i.test(l)))
+  const ownerIdx = lines.findIndex((l) => OWNER_RE.test(l) && (findOtherPhone(l) || /owner|landlord|屋主|业主|房东/i.test(l)) && !/owner\s+foreigner|owner\s+(?:occupied|stay)/i.test(l))
   if (ownerIdx >= 0) {
     const rest = lines[ownerIdx].match(OWNER_RE)![1]
-    ownerPhone = findPhone(rest) ?? findPhone(lines[ownerIdx])
+    ownerPhone = findOtherPhone(rest) ?? findOtherPhone(lines[ownerIdx])
     const nm = removePhones(rest)
       .replace(/\b(?:owner|landlord|contact|call|whatsapp|wa|at|is|name)\b/gi, ' ')
       .replace(/[:：\-–,()]+/g, ' ')
@@ -428,24 +456,45 @@ export function parseListing(text: string): ListingParse {
       .trim()
     ownerName = nm && !/\d/.test(nm) ? nm : null
   }
-  if (!ownerPhone) ownerPhone = findPhone(joined)
+  if (!ownerPhone) ownerPhone = findOtherPhone(joined)
 
   const isSkip = (l: string, i: number) =>
-    i === ownerIdx || PRICE_LINE.test(l) || SIZE_LINE.test(l) || ROOM_LINE.test(l) || !!findPhone(l)
+    i === ownerIdx || PRICE_LINE.test(l) || SIZE_LINE.test(l) || ROOM_LINE.test(l) || !!findPhone(l) || SIGNATURE.test(l)
 
-  // Address
-  const addrLines = lines
-    .filter((l, i) => !isSkip(l, i) && ADDRESS_RE.test(l))
-    .map((l) => l.replace(/^address\s*[:：\-]?\s*/i, '').replace(/[,\s]+$/, ''))
-  const address = addrLines.length ? addrLines.join(', ') : null
+  // Address: lines that look like an address, without repeating a line already included.
+  const addrParts: string[] = []
+  for (const [i, l] of lines.entries()) {
+    if (isSkip(l, i) || !ADDRESS_RE.test(l)) continue
+    const part = l.replace(/^address\s*[:：\-]?\s*/i, '').replace(/[,.\s]+$/, '')
+    if (addrParts.some((a) => a.toLowerCase().includes(part.toLowerCase()))) continue
+    addrParts.push(part)
+  }
+  // No street/taman words: use the location lines next to "For Sale / For Rent" (e.g. "Eco Tropics Greensgate / Kota Masai").
+  if (!addrParts.length) {
+    const bi = blocks.findIndex((b) => b.some((l) => DEAL_LINE.test(l)))
+    const ok = (l: string) => !DEAL_LINE.test(l) && !LABEL_LINE.test(l) && !isSkip(l, NaN) && !detectDeal(l) && l.length <= 80
+    let picked = bi >= 0 ? blocks[bi].filter(ok) : []
+    if (bi >= 0 && !picked.length && blocks[bi + 1]) picked = blocks[bi + 1].filter((l) => ok(l) && !detectTypes(l).length)
+    addrParts.push(...picked.map((l) => l.replace(/[,.\s]+$/, '')))
+  }
+  const address = addrParts.length ? addrParts.join(', ') : null
 
-  // Type (ignore land-size segments and the owner line)
-  const typeText = lines
-    .filter((_, i) => i !== ownerIdx)
-    .map((l) => l.replace(/\bland(?:\s*(?:size|area))?\s*[:\-]?\s*[\d,.]+\s*(?:[x×*]\s*[\d,.]+)?\s*(?:sq\.?\s*ft|sqft|sf|ft|acres?)?/gi, ' '))
-    .join('\n')
-  const types = detectTypes(typeText)
-  const type = types.find((t) => t !== T.land) ?? types[0] ?? null
+  // Type: the first line that names one ("1.5 Storey Semi D Factory"), ignoring land sizes, the owner line and remarks.
+  const typeLines = lines
+    .filter((l, i) => i !== ownerIdx && !SIGNATURE.test(l) && !/^(?:terrain|shape|tenure|title|remark)\s*[:：]/i.test(l))
+    .map((l) => l.replace(/\bland(?:\s*(?:size|area|is))?\s*[:\-]?\s*[\d,.]+\s*(?:["'′″]|ft)?\s*(?:[x×*]\s*[\d,.]+\s*(?:["'′″]|ft)?)?\s*(?:sq\.?\s*ft|sqft|sf|ft|acres?)?/gi, ' '))
+  let type: string | null = null
+  for (const l of typeLines) {
+    const found = detectTypes(l)
+    if (found.length) {
+      type = found.find((t) => t !== T.land) ?? found[0]
+      break
+    }
+  }
+  if (!type) {
+    const types = detectTypes(typeLines.join('\n'))
+    type = types.find((t) => t !== T.land) ?? types[0] ?? null
+  }
 
   // Price
   let price: number | null = null
@@ -473,14 +522,23 @@ export function parseListing(text: string): ListingParse {
   let land: number | null = null
   const bu = joined.match(new RegExp(String.raw`(?:built[\s-]?up|\bbu\b)\s*(?:area|size)?\s*[:：\-]?\s*${NUM}`, 'i'))
   if (bu) builtUp = amount(bu[1])
-  const landX = joined.match(/\bland\s*(?:size|area)?\s*[:：\-]?\s*(\d{1,4}(?:\.\d+)?)\s*(?:'|ft)?\s*[x×*]\s*(\d{1,4}(?:\.\d+)?)/i)
+  const FEET = String.raw`(?:["'′″]|ft|feet)?`
+  const landX = joined.match(new RegExp(String.raw`\bland\s*(?:size|area|is)?\s*[:：\-]?\s*(\d{1,4}(?:\.\d+)?)\s*${FEET}\s*[x×*]\s*(\d{1,4}(?:\.\d+)?)`, 'i'))
   if (landX) land = Math.round(parseFloat(landX[1]) * parseFloat(landX[2]))
   if (land == null) {
-    const lsq = joined.match(new RegExp(String.raw`\bland\s*(?:size|area)?\s*[:：\-]?\s*${NUM}\s*(?:sq\.?\s*ft|sqft|sf)?`, 'i'))
+    const lsq = joined.match(new RegExp(String.raw`\bland\s*(?:size|area|is)?\s*[:：\-]?\s*${NUM}\s*(?:sq\.?\s*ft|sqft|sf)?(?!\s*(?:acres?|hektar|hectares?|ha\b))`, 'i'))
     if (lsq) land = amount(lsq[1])
   }
   if (land == null) {
-    const dims = joined.match(/(?<![\d/])(\d{2,3})\s*(?:'|ft)?\s*[x×]\s*(\d{2,3})(?![\d/])/i)
+    // Agricultural land: acres or hectares, stored in sqft.
+    const ac = joined.match(/(\d+(?:\.\d+)?)\s*acres?\b/i)
+    const ha = joined.match(/(\d+(?:\.\d+)?)\s*(?:hektar|hectares?|ha\b)/i)
+    if (ac) land = Math.round(parseFloat(ac[1]) * 43560)
+    else if (ha) land = Math.round(parseFloat(ha[1]) * 107639)
+  }
+  const dimsRe = new RegExp(String.raw`(?<![\d/])(\d{2,3})\s*${FEET}\s*[x×]\s*(\d{2,3})(?![\d/])`, 'i')
+  if (land == null) {
+    const dims = joined.match(dimsRe)
     if (dims) land = parseInt(dims[1]) * parseInt(dims[2])
   }
   if (builtUp == null) {
@@ -496,21 +554,35 @@ export function parseListing(text: string): ListingParse {
       if (builtUp != null) break
     }
   }
+  if (builtUp == null) {
+    // Shop lots: "Size: 24x70" (not land) is the floor size.
+    const sizeLine = lines.find((l) => /^size\s*[:：]/i.test(l) && !/\bland\b/i.test(l))
+    const dims = sizeLine?.match(dimsRe)
+    if (dims) builtUp = parseInt(dims[1]) * parseInt(dims[2])
+  }
 
-  // Rooms
+  // Rooms: "Bedroom: 4+1", "4 bed 3 bath", "3R2B". 4+1 counts as 5 rooms.
   let bedrooms: number | null = null
   let bathrooms: number | null = null
+  const plus = (a: string, b?: string) => parseInt(a) + (b ? parseInt(b) : 0)
   const rb = joined.match(/(\d+)\s*r\s*(\d+)\s*b\b/i)
   if (rb) {
     bedrooms = parseInt(rb[1])
     bathrooms = parseInt(rb[2])
   }
   if (bedrooms == null) {
-    const m = joined.match(/(\d+)\s*(?:bed(?:room)?s?\b|br\b|rooms?\b|房)/i)
-    if (m) bedrooms = parseInt(m[1])
+    // "Bedroom: 4", then "4 bed", then "Bedroom 4"
+    const m =
+      joined.match(/\b(?:bed(?:room)?s?|rooms?)[ \t]*[:：][ \t]*(\d{1,2})(?:[ \t]*\+[ \t]*(\d))?\b/i) ??
+      joined.match(/\b(\d{1,2})(?:[ \t]*\+[ \t]*(\d))?[ \t]*(?:bed(?:room)?s?\b|br\b|rooms?\b|房)/i) ??
+      joined.match(/\b(?:bed(?:room)?s?)[ \t]*-?[ \t]*(\d{1,2})(?:[ \t]*\+[ \t]*(\d))?\b/i)
+    if (m) bedrooms = plus(m[1], m[2])
   }
   if (bathrooms == null) {
-    const m = joined.match(/(\d+)\s*(?:bath(?:room)?s?\b|ba\b|toilets?\b|厕|卫)/i)
+    const m =
+      joined.match(/\b(?:bath(?:room)?s?|toilets?)[ \t]*[:：][ \t]*(\d{1,2})\b/i) ??
+      joined.match(/\b(\d{1,2})[ \t]*(?:bath(?:room)?s?\b|ba\b|toilets?\b|厕|卫)/i) ??
+      joined.match(/\b(?:bath(?:room)?s?|toilets?)[ \t]*-?[ \t]*(\d{1,2})\b/i)
     if (m) bathrooms = parseInt(m[1])
   }
 
