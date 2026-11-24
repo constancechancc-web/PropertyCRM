@@ -118,7 +118,12 @@ export default function Listings() {
             ['sale', 'For Sale'],
             ['rent', 'For Rent'],
           ].map(([v, l]) => (
-            <Pill key={v} active={deal === v} onClick={() => setFilter('deal', v === 'all' ? null : v)}>
+            <Pill
+              key={v}
+              active={deal === v}
+              count={db.listings.filter((x) => (status === 'all' || x.status === status) && (v === 'all' || x.deal === v)).length}
+              onClick={() => setFilter('deal', v === 'all' ? null : v)}
+            >
               {l}
             </Pill>
           ))}
@@ -128,7 +133,7 @@ export default function Listings() {
             <Pill
               key={s}
               active={status === s}
-              count={s === 'all' ? db.listings.length : db.listings.filter((l) => l.status === s).length}
+              count={db.listings.filter((l) => (deal === 'all' || l.deal === deal) && (s === 'all' || l.status === s)).length}
               onClick={() => setFilter('status', s === 'available' ? null : s)}
             >
               {s === 'all' ? 'All' : LISTING_STATUS_LABEL[s]}
