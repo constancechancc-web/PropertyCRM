@@ -1,4 +1,10 @@
 {
+  "regions": ["sin1"],
+  "functions": {
+    "api/index.ts": {
+      "excludeFiles": "{node_modules/@electric-sql/**,.data/**,tests/**,dist/**}"
+    }
+  },
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api?__path=:path*" },
     { "source": "/((?!api).*)", "destination": "/index.html" }

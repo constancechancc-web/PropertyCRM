@@ -21,6 +21,8 @@ interface Driver {
   exec(sql: string): Promise<void>
 }
 
+const SETUP_SQL = `select set_config('role', 'crm_app', true), set_config('app.email', $1, true), set_config('app.user_id', $2, true)`
+
 const DATE_OID = 1082
 const NUMERIC_OID = 1700
 const INT8_OID = 20
@@ -52,8 +54,8 @@ async function pgDriver(url: string): Promise<Driver> {
       const client = await pool.connect()
       try {
         await client.query('begin')
-        await client.query('set local role crm_app')
-        await client.query(`select set_config('app.email', $1, true), set_config('app.user_id', $2, true)`, [user.email, user.id])
+        // One round trip: SET LOCAL ROLE crm_app + who is asking (RLS reads these).
+        await client.query(SETUP_SQL, [user.email, user.id])
         const out = await fn(wrap(client))
         await client.query('commit')
         return out
@@ -85,8 +87,8 @@ async function pgliteDriver(dir: string): Promise<Driver> {
     },
     async asUser(user, fn) {
       return db.transaction(async (tx) => {
-        await tx.query('set local role crm_app')
-        await tx.query(`select set_config('app.email', $1, true), set_config('app.user_id', $2, true)`, [user.email, user.id])
+        // One round trip: SET LOCAL ROLE crm_app + who is asking (RLS reads these).
+        await tx.query(SETUP_SQL, [user.email, user.id])
         return fn(wrap(tx))
       })
     },
