@@ -1,5 +1,5 @@
-import { useState, type ReactNode } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { BadgeDollarSign, Building2, CalendarClock, ClipboardPaste, House, KeyRound, LogOut, Plus, UserPlus, Users, UserRound, Inbox } from 'lucide-react'
 import { useAuth } from '../data/auth'
 import { OWNER_NAME, REN } from '../lib/constants'
@@ -102,6 +102,76 @@ export function AddMenu({ open, onClose }: { open: boolean; onClose: () => void 
   )
 }
 
+// Where the glass capsule was, so it can slide from there after the page changes
+// (each page draws its own header, so the nav is rebuilt on every switch).
+let lastPill: { x: number; w: number } | null = null
+
+/** Desktop nav: transparent, with a glass capsule under the current item that slides, stretches and settles with one bounce. */
+function GlassNav({ nav }: { nav: ReturnType<typeof useNav> }) {
+  const { pathname } = useLocation()
+  const wrap = useRef<HTMLElement>(null)
+  const pill = useRef<HTMLSpanElement>(null)
+
+  useLayoutEffect(() => {
+    const place = (animate: boolean) => {
+      const el = wrap.current?.querySelector<HTMLElement>('a[aria-current="page"]')
+      const p = pill.current
+      if (!p) return
+      if (!el) {
+        p.style.opacity = '0'
+        return
+      }
+      const to = { x: el.offsetLeft, w: el.offsetWidth }
+      const from = lastPill
+      lastPill = to
+      p.style.opacity = '1'
+      p.style.transform = `translateX(${to.x}px)`
+      p.style.width = `${to.w}px`
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      if (!animate || !from || reduced || Math.abs(from.x - to.x) < 1) return
+
+      const right = to.x > from.x
+      const lerp = (a: number, b: number, t: number) => a + (b - a) * t
+      const fromR = from.x + from.w
+      const toR = to.x + to.w
+      // Mid-flight: the front edge runs ahead, the back edge lags, so the capsule stretches along the direction of travel.
+      const midL = right ? lerp(from.x, to.x, 0.25) : lerp(from.x, to.x, 0.75)
+      const midR = right ? lerp(fromR, toR, 0.75) : lerp(fromR, toR, 0.25)
+      const over = right ? 5 : -5 // one small overshoot past the target, then settle
+      p.animate(
+        [
+          { transform: `translateX(${from.x}px) scaleY(1)`, width: `${from.w}px`, easing: 'cubic-bezier(.4,0,.2,1)' },
+          { transform: `translateX(${midL}px) scaleY(0.9)`, width: `${midR - midL}px`, offset: 0.45, easing: 'cubic-bezier(.2,.8,.3,1)' },
+          { transform: `translateX(${to.x + over}px) scaleY(1.03)`, width: `${to.w}px`, offset: 0.78, easing: 'ease-in-out' },
+          { transform: `translateX(${to.x}px) scaleY(1)`, width: `${to.w}px` },
+        ],
+        { duration: 560 },
+      )
+    }
+    place(true)
+    const onResize = () => place(false)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [pathname, nav.length])
+
+  return (
+    <nav ref={wrap} aria-label="Main" className="relative hidden items-center gap-1 md:flex">
+      <span ref={pill} aria-hidden className="nav-glass pointer-events-none absolute top-0 left-0 h-10 rounded-full opacity-0" />
+      {nav.map((n) => (
+        <NavLink
+          key={n.to}
+          to={n.to}
+          className={({ isActive }) =>
+            cx('relative z-10 inline-flex min-h-10 items-center rounded-full px-4 text-[15px] font-medium transition-colors', isActive ? 'text-ink' : 'text-ink/65 hover:text-ink', nav.length > 5 && 'px-3')
+          }
+        >
+          {n.label}
+        </NavLink>
+      ))}
+    </nav>
+  )
+}
+
 function TopBar({ onAdd }: { onAdd: () => void }) {
   const { email, role, signOut } = useAuth()
   const nav = useNav()
@@ -116,17 +186,7 @@ function TopBar({ onAdd }: { onAdd: () => void }) {
         </div>
       </div>
 
-      <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
-        {nav.map((n) => (
-          <NavLink
-            key={n.to}
-            to={n.to}
-            className={({ isActive }) => cx('inline-flex min-h-10 items-center rounded-full px-4 text-[15px] font-medium transition-colors', isActive ? 'bg-white/55 text-ink' : 'text-ink/70 hover:bg-white/25 hover:text-ink', nav.length > 5 && 'px-3')}
-          >
-            {n.label}
-          </NavLink>
-        ))}
-      </nav>
+      <GlassNav nav={nav} />
 
       <div className="flex items-center gap-2">
         <div className="hidden items-center gap-2 lg:flex">
