@@ -135,8 +135,14 @@ function GlassNav({ nav }: { nav: ReturnType<typeof useNav> }) {
       const fromR = from.x + from.w
       const toR = to.x + to.w
       // Mid-flight: the front edge runs ahead, the back edge lags, so the capsule stretches along the direction of travel.
-      const midL = right ? lerp(from.x, to.x, 0.25) : lerp(from.x, to.x, 0.75)
-      const midR = right ? lerp(fromR, toR, 0.75) : lerp(fromR, toR, 0.25)
+      let midL = right ? lerp(from.x, to.x, 0.25) : lerp(from.x, to.x, 0.75)
+      let midR = right ? lerp(fromR, toR, 0.75) : lerp(fromR, toR, 0.25)
+      // Keep the stretch modest (about 165px at most); the front edge stays where it is.
+      const maxW = Math.max(165, from.w, to.w)
+      if (midR - midL > maxW) {
+        if (right) midL = midR - maxW
+        else midR = midL + maxW
+      }
       const over = right ? 5 : -5 // one small overshoot past the target, then settle
       p.animate(
         [
