@@ -116,12 +116,12 @@ function TopBar({ onAdd }: { onAdd: () => void }) {
         </div>
       </div>
 
-      <nav aria-label="Main" className="hidden items-center gap-1 rounded-full bg-white/70 p-1 backdrop-blur md:flex">
+      <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
         {nav.map((n) => (
           <NavLink
             key={n.to}
             to={n.to}
-            className={({ isActive }) => cx('inline-flex min-h-10 items-center rounded-full px-4 text-[15px] font-medium transition-colors', isActive ? 'bg-brand-soft text-brand-ink' : 'text-ink/70 hover:text-ink', nav.length > 5 && 'px-3')}
+            className={({ isActive }) => cx('inline-flex min-h-10 items-center rounded-full px-4 text-[15px] font-medium transition-colors', isActive ? 'bg-white/55 text-ink' : 'text-ink/70 hover:bg-white/25 hover:text-ink', nav.length > 5 && 'px-3')}
           >
             {n.label}
           </NavLink>
